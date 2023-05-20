@@ -3,12 +3,17 @@ package com.aninfo.service;
 import com.aninfo.exceptions.DepositNegativeSumException;
 import com.aninfo.exceptions.InsufficientFundsException;
 import com.aninfo.model.Account;
+import com.aninfo.model.Transaction;
 import com.aninfo.repository.AccountRepository;
+import com.aninfo.repository.TransactionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
+import java.time.LocalDate;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -16,6 +21,7 @@ public class AccountService {
 
     @Autowired
     private AccountRepository accountRepository;
+    private TransactionRepository transactionRepository;
 
     public Account createAccount(Account account) {
         return accountRepository.save(account);
@@ -45,6 +51,13 @@ public class AccountService {
             throw new InsufficientFundsException("Insufficient funds");
         }
 
+        Transaction nuevaTransaccion = new Transaction();
+        nuevaTransaccion.setAccount(account);
+        nuevaTransaccion.setAmount(sum);
+        nuevaTransaccion.setDate(java.sql.Date.valueOf(LocalDate.now()));
+        nuevaTransaccion.setType("withdraw");
+
+        account.addTransaction(nuevaTransaccion);
         account.setBalance(account.getBalance() - sum);
         accountRepository.save(account);
 
@@ -59,10 +72,30 @@ public class AccountService {
         }
 
         Account account = accountRepository.findAccountByCbu(cbu);
+
+        Transaction nuevaTransaccion = new Transaction();
+        nuevaTransaccion.setAccount(account);
+        nuevaTransaccion.setAmount(sum);
+        nuevaTransaccion.setDate(java.sql.Date.valueOf(LocalDate.now()));
+        nuevaTransaccion.setType("deposit");
+
+        account.addTransaction(nuevaTransaccion);
+
         account.setBalance(account.getBalance() + sum);
         accountRepository.save(account);
 
         return account;
     }
 
+//    public Optional<Transaction> searchTransaction(Long cbu, Long transactionId) {
+//        Account account = accountRepository.findAccountByCbu(cbu);
+//        transactiontRepository.findById(transactionId);
+//        List<Transaction> transactions = account.getTransactions();
+//
+//        for (Transaction transaction : transactions) {
+//            if (transaction.getId().equals(transactionId)) {
+//                return ResponseEntity.ok(transaction);
+//            }
+//        }
+//    }
 }
